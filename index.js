@@ -36,6 +36,11 @@ app.get("/users", async(req,res)=>{
 })
 
 //services 
+app.get("/services", async (req, res) => {
+  const cursor = services.find({});
+  const result = await cursor.toArray();
+  res.send(result);
+});
 app.post("/services",async(req,res)=>{
     const service = req.body
     const result  = await services.insertOne(service)
