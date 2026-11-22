@@ -22,6 +22,7 @@ export async function connectToMongoDB() {
 const connectedClient = await connectToMongoDB();
 const db = connectedClient.db("weddora")
 const users = db.collection("user")
+const services = db.collection("services")
 
 
 app.get("/", (req, res) => {
@@ -33,6 +34,14 @@ app.get("/users", async(req,res)=>{
     const result =await cursor.toArray()
     res.send(result)
 })
+
+//services 
+app.post("/services",async(req,res)=>{
+    const service = req.body
+    const result  = await services.insertOne(service)
+    res.send(result)
+})
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
