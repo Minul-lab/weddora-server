@@ -23,6 +23,7 @@ const connectedClient = await connectToMongoDB();
 const db = connectedClient.db("weddora")
 const users = db.collection("user")
 const services = db.collection("services")
+const applications = db.collection("applications")
 
 
 app.get("/", (req, res) => {
@@ -35,7 +36,7 @@ app.get("/users", async(req,res)=>{
     res.send(result)
 })
 
-//services 
+//services  related apis
 app.get("/services", async (req, res) => {
   try {
     const { search, category, location } = req.query;
@@ -67,6 +68,13 @@ app.get("/services", async (req, res) => {
     res.status(500).send({ message: "Something went wrong" });
   }
 });
+// service detail api
+app.get("/services/:id",async(req,res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await services.findOne(query);
+  res.send(result)
+})
 app.post("/services",async(req,res)=>{
     const service = req.body
     const result  = await services.insertOne(service)
@@ -78,6 +86,14 @@ app.delete("/services/:id", async(req,res)=>{
   const result = await services.deleteOne(query);
   res.send(result)
 })
+
+
+// applications related apis
+app.post("/applications", async (req, res) => {
+  const application = req.body;
+  const result = await applications.insertOne(application);
+  res.send(result);
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
