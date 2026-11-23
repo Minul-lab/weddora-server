@@ -37,9 +37,35 @@ app.get("/users", async(req,res)=>{
 
 //services 
 app.get("/services", async (req, res) => {
-  const cursor = services.find({});
-  const result = await cursor.toArray();
-  res.send(result);
+  try {
+    const { search, category, location } = req.query;
+
+    const filter = {};
+
+    if (search) {
+      filter.serviceName = {
+        $regex: search.trim(),
+        $options: "i",
+      };
+    }
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (location) {
+      filter.location = {
+        $regex: location.trim(),
+        $options: "i",
+      };
+    }
+
+    const result = await services.find(filter).toArray();
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Something went wrong" });
+  }
 });
 app.post("/services",async(req,res)=>{
     const service = req.body
