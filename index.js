@@ -94,7 +94,34 @@ app.post("/applications", async (req, res) => {
   const result = await applications.insertOne(application);
   res.send(result);
 });
+app.get("/applications/user/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
 
+    const query = { userId: id };
+
+    const result = await applications.find(query).toArray();
+
+    res.status(200).send(result);
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    res.status(500).send({ message: "Failed to fetch applications" });
+  }
+});
+app.get("/applications/vendor/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const query = { vendorId: id };
+
+    const result = await applications.find(query).toArray();
+
+    res.status(200).send(result);
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    res.status(500).send({ message: "Failed to fetch applications" });
+  }
+});
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
