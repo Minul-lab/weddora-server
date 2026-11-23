@@ -69,12 +69,34 @@ app.get("/services", async (req, res) => {
   }
 });
 // service detail api
+app.get("/services/count", async (req, res) => {
+  const query = {};
+
+  if (req.query.vendorId) {
+    query.vendorId = req.query.vendorId;
+  }
+
+  const count = await services.countDocuments(query);
+
+  res.send({ count: count });
+});
 app.get("/services/:id",async(req,res)=>{
   const id = req.params.id;
   const query = {_id: new ObjectId(id)};
   const result = await services.findOne(query);
   res.send(result)
 })
+app.get("/services/count", async (req, res) => {
+  const query = {};
+
+  if (req.query.vendorId) {
+    query.vendorId = req.query.vendorId;
+  }
+
+  const count = await services.countDocuments(query);
+
+  res.send({ count: count });
+});
 app.post("/services",async(req,res)=>{
     const service = req.body
     const result  = await services.insertOne(service)
