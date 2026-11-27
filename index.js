@@ -129,7 +129,19 @@ app.get("/users/:id/premium", async(req,res)=>{
   const result = await users.findOne(query,{projection:{premium:1,   }});
   res.send(result)
 });
-
+app.patch("/users/:id/role", async(req,res)=>{
+  const id = req.params.id;
+  
+  const query = {_id: new ObjectId(id)};
+  const updateDoc = {
+    $set: {
+      role: role,
+    },
+  };
+  const result = await users.updateOne(query, updateDoc);
+  res.send(result)
+}
+);
 //services  related apis
 app.get("/services", async (req, res) => {
   try {
