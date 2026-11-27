@@ -2,10 +2,13 @@ import express from "express";
 import cors from "cors"
 import { MongoClient, ObjectId } from "mongodb";
 import "dotenv/config";
+import Stripe from "stripe";
 const app = express();
 
 app.use(express.json())
 app.use(cors())
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 const port =process.env.PORT || 8000;
 const client = new MongoClient(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.7hkgzuk.mongodb.net/`,
@@ -24,17 +27,26 @@ const db = connectedClient.db("weddora")
 const users = db.collection("user")
 const services = db.collection("services")
 const applications = db.collection("applications")
+const payments = db.collection("payments")
 
 
 app.get("/", (req, res) => {
   res.send("Hello World! weddora");
 });
 
+//user related api
+
 app.get("/users", async(req,res)=>{
     const cursor = users.find({})
     const result =await cursor.toArray()
     res.send(result)
 })
+app.get("/users/:id/premium", async(req,res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await users.findOne(query,{projection:{premium:1,   }});
+  res.send(result)
+});
 
 //services  related apis
 app.get("/services", async (req, res) => {
@@ -144,6 +156,89 @@ app.get("/applications/vendor/:id", async (req, res) => {
     res.status(500).send({ message: "Failed to fetch applications" });
   }
 });
+
+// payment related apis
+
+app.post("/payments/checkout-verify", async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.send({
+        success: false,
+        message: "sessionId is required",
+      });
+    }
+
+    const { status, payment_status, customer_email, metadata, payment_intent } =
+      await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (status !== "complete" || payment_status !== "paid") {
+      return res.send({
+        success: false,
+        message: "Payment verification failed",
+      });
+    }
+
+    // Check whether this session was already processed
+    const existingSession = await payments.findOne({ sessionId });
+
+    if (existingSession) {
+      return res.send({
+        success: false,
+        message: "Session already exists",
+      });
+    }
+
+    // Validate user ID from Stripe metadata
+    if (!metadata?.userId || !ObjectId.isValid(metadata.userId)) {
+      return res.send({
+        success: false,
+        message: "Invalid user information",
+      });
+    }
+
+    // Insert payment information
+    const payment = {
+      sessionId,
+      status,
+      customer_email,
+      userId: metadata.userId,
+      payment_status,
+      payment_intent,
+    };
+
+    const result = await payments.insertOne(payment);
+
+    // Update user premium status
+    const query = {
+      _id: new ObjectId(metadata.userId),
+    };
+
+    const updatedDoc = {
+      $set: {
+        premium: true,
+      },
+    };
+
+    const updateResult = await users.updateOne(query, updatedDoc);
+
+    return res.send({
+      success: true,
+      result,
+      updateResult,
+    });
+  } catch (error) {
+    console.error("Payment verification error:", error);
+
+    return res.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
